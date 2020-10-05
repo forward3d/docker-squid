@@ -1,15 +1,29 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-if [ ! -z $NET ] && [ -z $CIDR ] ; then
-    sed -i 's/192.168.0.0\/16/'$NET'/' /etc/squid/squid.conf
-fi
+# Run confd to render config file(s)
+CONFD_BACKEND="${CONFD_BACKEND:-env}"
 
-if [ -z $NET ] && [ ! -z $CIDR ] ; then
-    sed -i 's/192.168.0.0\/16/192.168.0.0\/'$CIDR'/' /etc/squid/squid.conf
-fi
+echo "Run confd with backend ${CONFD_BACKEND}"
+confd -onetime -backend $CONFD_BACKEND || exit 1
 
-if [ ! -z $NET ] && [ ! -z $CIDR ] ; then
-    sed -i 's/192.168.0.0\/16/'$NET'\/'$CIDR'/' /etc/squid/squid.conf
-fi
+# Grant permissions to /dev/stdout for spawned squid process
+chown squid:squid /dev/stdout
 
-exec /usr/sbin/squid -N -d 0 -f /etc/squid/squid.conf
+mkdir /var/spool/squid
+chown squid:squid /var/spool/squid
+
+echo ""
+echo "[DEBUG] squid.conf"
+cat /etc/squid/squid.conf
+
+echo ""
+echo "[DEBUG] whitelist.txt"
+cat /etc/squid/whitelist.txt
+
+echo ""
+echo "[DEBUG] blacklist.txt"
+cat /etc/squid/blacklist.txt
+
+# Run application
+exec "$@"

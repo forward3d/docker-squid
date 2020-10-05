@@ -1,8 +1,15 @@
 FROM alpine:3.12.0
 
-RUN apk --no-cache update && apk --no-cache add squid
+RUN echo "@edge-testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+RUN apk --no-cache update && apk --no-cache add squid confd@edge-testing bash
 
-ADD squid.conf /etc/squid/squid.conf
-ADD entrypoint.sh /usr/local/bin
+# Redirect squid access logs to stdout
+RUN ln -sf /dev/stdout /var/log/squid/access.log
 
-ENTRYPOINT entrypoint.sh
+# Copy confd configuration
+COPY confd /etc/confd
+
+# Set entrypoint and default command arguments
+COPY entrypoint.sh /usr/bin/entrypoint.sh
+ENTRYPOINT ["/usr/bin/entrypoint.sh"]
+CMD ["squid","-f","/etc/squid/squid.conf","-NYCd","1"]
