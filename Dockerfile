@@ -1,4 +1,4 @@
-FROM alpine:3.12.2
+FROM alpine:3.14.0
 
 RUN echo "@edge-testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
 RUN apk --no-cache update && apk --no-cache add squid confd@edge-testing bash
